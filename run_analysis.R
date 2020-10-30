@@ -1,0 +1,82 @@
+#Peer-graded Assignment: Getting and Cleaning Data Course Project
+#Make sure your in the right folder
+setwd("C:/R/UCI HAR Dataset")
+
+#load the correct packages 
+install.packages("dplyr")
+library (dplyr)
+install.packages("data.table")
+library (data.table)
+install.packages("knitr")
+library(knitr)
+
+#load the datasets using read.table
+subjecttest <- read.table('./test/subject_test.txt',header=FALSE)
+xtest <- read.table('./test/X_test.txt',header=FALSE)
+ytest <- read.table('./test/y_test.txt',header=FALSE)
+subjecttrain <- read.table('./train/subject_train.txt',header=FALSE)
+xtrain <- read.table('./train/X_train.txt',header=FALSE)
+ytrain <- read.table('./train/y_train.txt',header=FALSE)
+labels = read.table('./activity_labels.txt',header = FALSE)
+features = read.table('./features.txt',header = FALSE)
+
+
+#Set column names of a train data
+colnames(xtrain) = features[,2]
+colnames(ytrain) = "activityId"
+colnames(subjecttrain) = "subjectId"
+#Set column names of a test data
+colnames(xtest) = features[,2]
+colnames(ytest) = "activityId"
+colnames(subjecttest) = "subjectId"
+#Set column names of a activity labels to check
+colnames(labels) <- c('activityId','activityType')
+# Checks
+#head(labels)
+#head(ytest)
+#head(xtest)
+#head(ytrain)
+#head(xtrain)
+#head(subjecttrain)
+#head(subjecttest)
+
+
+#Merges the training and the test sets to create one data set.
+train <- cbind(xtrain, subjecttrain, ytrain)
+test <- cbind(xtest, subjecttest, ytest)
+traintest <- rbind(test, train)
+
+# Checks
+#head(train)
+#head(test)
+#head(traintest)
+
+#Extracts only the measurements on the mean and standard deviation for each measurement.
+# Need step is to read all the values that are available
+colNames = colnames(traintest)
+#subset the colnames with activityId, subjectId, mean, std in the headers
+meanstd = (grepl("activityId" , colNames) | grepl("subjectId" , colNames) | grepl("mean" , colNames) | grepl("std" , colNames))
+#Subset into a dataset  
+traintestmeanstd <- traintest[ , meanstd == TRUE]
+
+# Checks
+#head(meanstd)
+#head(traintestmeanstd)
+
+#Uses descriptive activity names to name the activities in the data set
+traintestactivitynames = merge(traintestmeanstd, labels, by='activityId')
+
+
+#head(traintestactivitynames, n=2)
+
+#independent tidy dataset with the average of each variable for each activity and each subject
+#Use labels the dataset with descriptive variable names.
+#Hmm can't figure out were the mean goes after its made
+TidySet <-  aggregate(. ~subjectId + activityId, traintestactivitynames,  mean)
+#head(TidySet, n=3)
+TidySet <- TidySet[order(TidySet$subjectId, TidySet$activityId),]
+
+#The last step is to write the ouput to a text file 
+write.table(TidySet, "TidySet.txt", row.name=FALSE)
+
+
